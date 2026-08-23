@@ -4,12 +4,16 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from app.core.ulpin_generator import VolumetricParcelInput, calculate_3d_ulpin, ULPIN3DResult
 from app.core.collision_engine import SpatialObject3D, check_3d_spatial_conflict
-from app.core.ai_cadastre_extractor import extract_3d_cadastre_from_text, ExtractedCadastreData
+from app.core.ai_cadastre_extractor import extract_3d_cadastre_from_text
+from app.core.audit_engine import (
+    BuildingAuditInput, UDSAuditInput, AirspaceCorridorInput,
+    audit_far_and_ghost_floors, audit_uds_conservation, audit_airspace_corridor
+)
 
 app = FastAPI(
-    title="3D-BhuAadhar Spatial Cadastral Engine",
-    description="ISO 19152 (LADM II) 3D-ULPIN Generation, Gemini AI Deed Parser & Volumetric Conflict Engine",
-    version="1.1.0"
+    title="3D-BhuAadhar Regulatory & Strata Cadastral Engine",
+    description="ISO 19152 (LADM II) 3D-ULPIN, Volumetric FAR/FSI Auditor, UDS Multi-Mortgage Detector & Air Rights Engine",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -31,9 +35,14 @@ class DeedIngestRequest(BaseModel):
 @app.get("/")
 def health_check():
     return {
-        "service": "3D-BhuAadhar Engine",
+        "service": "3D-BhuAadhar Engine V2",
         "standard": "ISO 19152 (LADM II 3D Cadastre)",
-        "ai_engine": "Gemini 2.5 Flash Multimodal Parser",
+        "modules": [
+            "FAR & Ghost Floor Auditor",
+            "UDS Multi-Mortgage Fraud Detector",
+            "Air Rights & Drone Sky Corridor",
+            "Subsurface Spatial Intersection"
+        ],
         "status": "operational"
     }
 
@@ -55,11 +64,7 @@ def api_check_conflict(req: ConflictCheckRequest):
 def api_ai_ingest_deed(req: DeedIngestRequest):
     try:
         cadastre_data = extract_3d_cadastre_from_text(req.raw_deed_text)
-        
-        # Build 3D bounding coordinates from the extracted spatial bounds
         coords_3d = [(lon, lat, cadastre_data.z_min_meters) for lon, lat in cadastre_data.bounding_coordinates]
-        
-        # Calculate standard 3D-ULPIN
         parcel_input = VolumetricParcelInput(
             parcel_name=cadastre_data.property_name,
             strata_type=cadastre_data.strata_type,
@@ -67,7 +72,6 @@ def api_ai_ingest_deed(req: DeedIngestRequest):
             coordinates_3d=coords_3d
         )
         ulpin_result = calculate_3d_ulpin(parcel_input)
-        
         return {
             "success": True,
             "ai_extracted_data": cadastre_data,
@@ -75,3 +79,24 @@ def api_ai_ingest_deed(req: DeedIngestRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/audit/far-violation")
+def api_audit_far(req: BuildingAuditInput):
+    try:
+        return audit_far_and_ghost_floors(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/audit/uds-conservation")
+def api_audit_uds(req: UDSAuditInput):
+    try:
+        return audit_uds_conservation(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/audit/airspace-corridor")
+def api_audit_airspace(req: AirspaceCorridorInput):
+    try:
+        return audit_airspace_corridor(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
