@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ShieldCheck, MapPin, Eye } from "lucide-react";
+import { 
+  Building2, ShieldCheck, MapPin, AlertTriangle, 
+  Trees, Filter, Info, X, Radio
+} from "lucide-react";
 
 export interface CadastralPlot {
   id: string;
@@ -40,7 +43,7 @@ export const STATE_WARDS = [
     ward: "Ward H/East - Bandra-Kurla Complex (BKC)",
     center: [72.8685, 19.0665] as [number, number],
     zoom: 16.5,
-    pitch: 62,
+    pitch: 60,
     bearing: -30,
     plots: [
       {
@@ -62,7 +65,7 @@ export const STATE_WARDS = [
           { floor: "Basement 3 Bullet Train Box", owner: "NHSRCL High Speed Rail", type: "Subsurface Corridor (U)", elevation: "-15.0m to -22.0m", ulpin: "IND270051098220-U150220-H0" }
         ],
         subsurfaceUtilities: [
-          { name: "Mumbai Metro Line 3 Underground Corridor", depth: "-12.0m to -18.0m", status: "CLEAR", color: "#a855f7" },
+          { name: "Mumbai Metro Line 3 Underground Corridor", depth: "-12.0m to -18.0m", status: "CLEAR", color: "#9333ea" },
           { name: "MGL High-Pressure Gas Distribution", depth: "-4.8m to -5.4m", status: "CLEAR", color: "#facc15" }
         ]
       }
@@ -71,7 +74,7 @@ export const STATE_WARDS = [
   {
     state: "Tamil Nadu",
     district: "Chennai Central",
-    ward: "Ward 114 - Anna Salai Metro & Commercial Corridor",
+    ward: "Ward 114 - Anna Salai Metro Corridor",
     center: [80.2520, 13.0610] as [number, number],
     zoom: 16.5,
     pitch: 60,
@@ -93,160 +96,15 @@ export const STATE_WARDS = [
         strataBreakdown: [
           { floor: "Rooftop Air Rights (A)", owner: "CleanEnergy Solar Corp", type: "Air Rights (A)", elevation: "+72.0m to +75.0m", ulpin: "IND338421049280-A072075-S1" },
           { floor: "Floor 20 - Executive Penthouse", owner: "Ishaan Srivastava", type: "Vertical Residential (V)", elevation: "+60.0m to +63.0m", ulpin: "IND338421049280-V060063-P4" },
-          { floor: "Floor 12 - Tech Hub Office", owner: "Plug & Pray Solutions Ltd", type: "Commercial Strata (V)", elevation: "+36.0m to +39.0m", ulpin: "IND338421049280-V036039-T2" },
-          { floor: "Ground Floor Retail Arcade", owner: "State Retail Corp", type: "Surface Cadastre (S)", elevation: "+0.0m to +3.0m", ulpin: "IND338421049280-S000003-G0" },
-          { floor: "Basement 2 Underground Metro Link", owner: "CMRL Metro Rail Corp", type: "Subsurface Utility (U)", elevation: "-8.0m to -12.0m", ulpin: "IND338421049280-U080120-M9" }
+          { floor: "Floor 12 - Tech Hub Office", owner: "Plug & Pray Solutions Ltd", type: "Commercial Strata (V)", elevation: "+36.0m to +39.0m", ulpin: "IND338421049280-V036039-T2" }
         ],
         subsurfaceUtilities: [
-          { name: "Underground Metro Corridor Phase 2", depth: "-8.5m to -12.0m", status: "CLEAR", color: "#a855f7" },
-          { name: "BSNL Gigabit Optic Fiber Main", depth: "-1.8m to -2.2m", status: "CLEAR", color: "#ec4899" },
-          { name: "Municipal 500mm Water Trunk", depth: "-3.4m to -3.8m", status: "CLEAR", color: "#84cc16" },
-          { name: "GAIL High-Pressure Gas Conduit", depth: "-4.8m to -5.2m", status: "CLEAR", color: "#facc15" }
-        ]
-      }
-    ]
-  },
-  {
-    state: "Delhi NCT",
-    district: "New Delhi",
-    ward: "Ward 42 - Connaught Place Financial Circle",
-    center: [77.2185, 28.6315] as [number, number],
-    zoom: 16.5,
-    pitch: 58,
-    bearing: 40,
-    plots: [
-      {
-        id: "PLOT-DEL-001",
-        plotNumber: "Plot No. 14 (Statesman Commercial Tower)",
-        wardName: "Connaught Place Zone",
-        district: "New Delhi, Delhi",
-        surveyNumber: "DL-CP-140/2026",
-        registeredOwner: "National Capital Urban Development",
-        ulpin2D: "IND110001048120",
-        ulpin3D: "IND110001048120-V000620-A1",
-        buildingHeight: 62,
-        floors: 20,
-        carpetAreaSqm: 5600.0,
-        coordinates: [77.2185, 28.6315] as [number, number],
-        strataBreakdown: [
-          { floor: "Floor 18 - Central Board Office", owner: "Govt of Delhi NCT", type: "Administrative (V)", elevation: "+54.0m to +57.0m", ulpin: "IND110001048120-V054057-G1" },
-          { floor: "Floor 10 - Media Exchange Suite", owner: "Capital News Media", type: "Commercial (V)", elevation: "+30.0m to +33.0m", ulpin: "IND110001048120-V030033-M4" },
-          { floor: "Basement 2 DMRC Metro Intersect", owner: "Delhi Metro Rail Corp", type: "Subsurface Transit (U)", elevation: "-9.0m to -14.0m", ulpin: "IND110001048120-U090140-D9" }
-        ],
-        subsurfaceUtilities: [
-          { name: "DMRC Yellow Line Underground Tunnel", depth: "-9.5m to -14.0m", status: "CLEAR", color: "#a855f7" },
-          { name: "IGL Natural Gas Pipeline Trunk", depth: "-4.5m to -5.0m", status: "CLEAR", color: "#facc15" }
+          { name: "CMRL Underground Metro Corridor", depth: "-8.5m to -12.0m", status: "CLEAR", color: "#9333ea" }
         ]
       }
     ]
   }
 ];
-
-function getGeoDataForCenter(center: [number, number]) {
-  const [lon, lat] = center;
-
-  const buildingFeatures = [
-    {
-      type: "Feature",
-      properties: {
-        id: "BLD-1",
-        name: "Plot Cadastral Alpha (FAR Violation Flagged)",
-        height: 78,
-        color: "#ef4444"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [lon - 0.0015, lat + 0.0006],
-          [lon - 0.0002, lat + 0.0006],
-          [lon - 0.0002, lat + 0.0018],
-          [lon - 0.0015, lat + 0.0018],
-          [lon - 0.0015, lat + 0.0006]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "BLD-2",
-        name: "State Cadastral Twin HQ (Compliant)",
-        height: 95,
-        color: "#0284c7"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [lon + 0.0005, lat + 0.0004],
-          [lon + 0.0022, lat + 0.0004],
-          [lon + 0.0022, lat + 0.0019],
-          [lon + 0.0005, lat + 0.0019],
-          [lon + 0.0005, lat + 0.0004]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "BLD-3",
-        name: "Metropolitan Financial Plaza",
-        height: 52,
-        color: "#38bdf8"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [lon - 0.0014, lat - 0.0016],
-          [lon + 0.0002, lat - 0.0016],
-          [lon + 0.0002, lat - 0.0006],
-          [lon - 0.0014, lat - 0.0006],
-          [lon - 0.0014, lat - 0.0016]
-        ]]
-      }
-    }
-  ];
-
-  const utilityFeatures = [
-    {
-      type: "Feature",
-      properties: { name: "Underground Metro Corridor", color: "#a855f7" },
-      geometry: {
-        type: "LineString",
-        coordinates: [
-          [lon - 0.0035, lat + 0.0018],
-          [lon - 0.0010, lat + 0.0005],
-          [lon + 0.0018, lat - 0.0006],
-          [lon + 0.0040, lat - 0.0018]
-        ]
-      }
-    },
-    {
-      type: "Feature",
-      properties: { name: "BSNL Gigabit Optic Fiber", color: "#ec4899" },
-      geometry: {
-        type: "LineString",
-        coordinates: [
-          [lon - 0.0030, lat + 0.0012],
-          [lon, lat + 0.0003],
-          [lon + 0.0030, lat - 0.0009]
-        ]
-      }
-    },
-    {
-      type: "Feature",
-      properties: { name: "Municipal Potable Water Main", color: "#84cc16" },
-      geometry: {
-        type: "LineString",
-        coordinates: [
-          [lon - 0.0025, lat - 0.0012],
-          [lon + 0.0006, lat],
-          [lon + 0.0035, lat + 0.0012]
-        ]
-      }
-    }
-  ];
-
-  return { buildingFeatures, utilityFeatures };
-}
 
 export default function GeoCadastreMap({
   onSelectPlot
@@ -255,14 +113,117 @@ export default function GeoCadastreMap({
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const [selectedStateIndex, setSelectedStateIndex] = useState(0);
-  const [isXrayActive, setIsXrayActive] = useState(false);
-  const onSelectPlotRef = useRef(onSelectPlot);
+  const [activeInspector, setActiveInspector] = useState<any>(null);
 
-  useEffect(() => {
-    onSelectPlotRef.current = onSelectPlot;
-  }, [onSelectPlot]);
+  const [filters, setFilters] = useState({
+    BUILDINGS: true,
+    FAR_VIOLATIONS_ONLY: false,
+    UTILITIES: true,
+    TREES: true
+  });
+
+  const clearMarkers = () => {
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+  };
+
+  const renderOverlays = (map: maplibregl.Map, center: [number, number]) => {
+    clearMarkers();
+    const [lon, lat] = center;
+
+    // 1. Red FAR Violation Tower Marker
+    if (filters.BUILDINGS) {
+      const bldEl = document.createElement("div");
+      bldEl.className = "cursor-pointer group relative flex flex-col items-center";
+      bldEl.innerHTML = `
+        <div class="px-2.5 py-1 bg-red-600 text-white font-bold text-[10px] rounded-md shadow-lg border border-white flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+          Plot 42/A (+2 Ghost Floors)
+        </div>
+        <div class="w-8 h-12 bg-red-500/80 border-2 border-red-700 rounded-sm shadow-2xl flex items-center justify-center text-[9px] text-white font-mono font-bold mt-0.5">
+          72m
+        </div>
+      `;
+      bldEl.onclick = () => {
+        setActiveInspector({
+          type: "BUILDING",
+          title: "Plot 42/A (FAR Breach Flagged)",
+          height: "72.0m MSL (+2 Unauthorized Tiers)",
+          status: "CRITICAL VIOLATION - Uncollected Tax: ₹4.82 Cr/yr",
+          category: "FAR_BREACH"
+        });
+        onSelectPlot(STATE_WARDS[selectedStateIndex].plots[0]);
+      };
+      const marker1 = new maplibregl.Marker({ element: bldEl, anchor: "bottom" })
+        .setLngLat([lon - 0.0008, lat + 0.0004])
+        .addTo(map);
+      markersRef.current.push(marker1);
+    }
+
+    // 2. Blue Compliant HQ Marker
+    if (filters.BUILDINGS && !filters.FAR_VIOLATIONS_ONLY) {
+      const bld2El = document.createElement("div");
+      bld2El.className = "cursor-pointer group relative flex flex-col items-center";
+      bld2El.innerHTML = `
+        <div class="px-2.5 py-1 bg-blue-700 text-white font-bold text-[10px] rounded-md shadow-lg border border-white">
+          State Cadastral HQ (Compliant)
+        </div>
+        <div class="w-10 h-16 bg-blue-600/80 border-2 border-blue-800 rounded-sm shadow-2xl flex items-center justify-center text-[9px] text-white font-mono font-bold mt-0.5">
+          95m
+        </div>
+      `;
+      bld2El.onclick = () => {
+        setActiveInspector({
+          type: "BUILDING",
+          title: "DoLR State Cadastral Twin HQ",
+          height: "95.0m MSL (Sanctioned & Verified)",
+          status: "ISO 19152 LADM II Fully Compliant",
+          category: "COMPLIANT"
+        });
+      };
+      const marker2 = new maplibregl.Marker({ element: bld2El, anchor: "bottom" })
+        .setLngLat([lon + 0.0012, lat + 0.0006])
+        .addTo(map);
+      markersRef.current.push(marker2);
+    }
+
+    // 3. Tree Botanical Personhood Markers
+    if (filters.TREES) {
+      const treeCoords: [number, number, string, string, string][] = [
+        [lon - 0.0012, lat - 0.0003, "Heritage Neem (IND338421049280-ECO0042)", "Azadirachta indica (45 Years)", "₹7,20,000"],
+        [lon + 0.0003, lat + 0.0012, "Protected Banyan (IND338421049280-ECO0043)", "Ficus benghalensis (60 Years)", "₹12,50,000"]
+      ];
+
+      treeCoords.forEach(([tLon, tLat, name, species, penalty]) => {
+        const treeEl = document.createElement("div");
+        treeEl.className = "cursor-pointer flex flex-col items-center";
+        treeEl.innerHTML = `
+          <div class="w-7 h-7 rounded-full bg-emerald-600 border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs hover:scale-125 transition">
+            🌳
+          </div>
+          <span class="text-[9px] font-bold text-emerald-900 bg-white/95 px-1.5 py-0.2 rounded shadow border border-emerald-200 mt-0.5 whitespace-nowrap">
+            Root Shield 3m
+          </span>
+        `;
+        treeEl.onclick = () => {
+          setActiveInspector({
+            type: "TREE",
+            title: name,
+            species: species,
+            root_cylinder: "0.0m to -2.8m Subsurface Exclusion Zone",
+            penalty: penalty
+          });
+        };
+        const treeMarker = new maplibregl.Marker({ element: treeEl, anchor: "center" })
+          .setLngLat([tLon, tLat])
+          .addTo(map);
+        markersRef.current.push(treeMarker);
+      });
+    }
+  };
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -271,7 +232,6 @@ export default function GeoCadastreMap({
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      maxZoom: 18,
       style: {
         version: 8,
         sources: {
@@ -289,9 +249,9 @@ export default function GeoCadastreMap({
             type: "raster",
             source: "osm",
             paint: {
-              "raster-brightness-max": 0.45,
-              "raster-contrast": 0.35,
-              "raster-saturation": -0.85
+              "raster-brightness-max": 0.95,
+              "raster-contrast": 0.05,
+              "raster-saturation": -0.3
             }
           }
         ]
@@ -307,55 +267,16 @@ export default function GeoCadastreMap({
 
     map.on("load", () => {
       map.resize();
-      const { buildingFeatures, utilityFeatures } = getGeoDataForCenter(initialWard.center);
-
-      map.addSource("3d-buildings-source", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: buildingFeatures as any }
-      });
-
-      map.addLayer({
-        id: "3d-buildings-extrusion",
-        source: "3d-buildings-source",
-        type: "fill-extrusion",
-        paint: {
-          "fill-extrusion-color": ["get", "color"],
-          "fill-extrusion-height": ["get", "height"],
-          "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.9
-        }
-      });
-
-      map.addSource("3d-utilities-source", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: utilityFeatures as any }
-      });
-
-      map.addLayer({
-        id: "utilities-layer",
-        source: "3d-utilities-source",
-        type: "line",
-        paint: {
-          "line-color": ["get", "color"],
-          "line-width": 8,
-          "line-opacity": 0.95
-        }
-      });
-
-      map.on("click", "3d-buildings-extrusion", () => {
-        onSelectPlotRef.current(STATE_WARDS[0].plots[0]);
-      });
-
-      map.on("mouseenter", "3d-buildings-extrusion", () => (map.getCanvas().style.cursor = "pointer"));
-      map.on("mouseleave", "3d-buildings-extrusion", () => (map.getCanvas().style.cursor = ""));
+      renderOverlays(map, initialWard.center);
     });
 
     return () => {
+      clearMarkers();
       map.remove();
     };
   }, []);
 
-  const handleStateChange = useCallback((index: number) => {
+  const handleStateChange = (index: number) => {
     setSelectedStateIndex(index);
     const target = STATE_WARDS[index];
     const map = mapInstance.current;
@@ -367,68 +288,34 @@ export default function GeoCadastreMap({
       pitch: target.pitch,
       bearing: target.bearing,
       essential: true,
-      duration: 2000
+      duration: 1800
     });
 
-    const { buildingFeatures, utilityFeatures } = getGeoDataForCenter(target.center);
+    renderOverlays(map, target.center);
+    onSelectPlot(target.plots[0]);
+  };
 
-    if (map.getSource("3d-buildings-source")) {
-      (map.getSource("3d-buildings-source") as maplibregl.GeoJSONSource).setData({
-        type: "FeatureCollection",
-        features: buildingFeatures as any
-      });
-    }
-
-    if (map.getSource("3d-utilities-source")) {
-      (map.getSource("3d-utilities-source") as maplibregl.GeoJSONSource).setData({
-        type: "FeatureCollection",
-        features: utilityFeatures as any
-      });
-    }
-
-    onSelectPlotRef.current(target.plots[0]);
-  }, []);
-
-  const toggleXray = () => {
-    setIsXrayActive(!isXrayActive);
-    const map = mapInstance.current;
-    if (!map) return;
-
-    if (!isXrayActive) {
-      map.setPaintProperty("3d-buildings-extrusion", "fill-extrusion-opacity", 0.3);
-      map.setPaintProperty("utilities-layer", "line-width", 12);
-    } else {
-      map.setPaintProperty("3d-buildings-extrusion", "fill-extrusion-opacity", 0.9);
-      map.setPaintProperty("utilities-layer", "line-width", 8);
+  const toggleFilter = (key: keyof typeof filters) => {
+    const next = { ...filters, [key]: !filters[key] };
+    setFilters(next);
+    if (mapInstance.current) {
+      renderOverlays(mapInstance.current, STATE_WARDS[selectedStateIndex].center);
     }
   };
 
   return (
-    <div className="relative w-full h-full min-h-[500px]">
-      <div ref={mapContainer} className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl" />
+    <div className="relative w-full h-full min-h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
-      {/* Floating Control HUD */}
-      <div className="absolute top-4 left-4 bg-[#070e24]/95 backdrop-blur-xl border border-cyan-500/30 p-3.5 rounded-2xl shadow-2xl z-10 flex flex-col space-y-2.5 max-w-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-100 uppercase tracking-wider">
-            <MapPin className="w-4 h-4 text-emerald-400" /> Cadastral Zone Selector
-          </div>
-          <button
-            onClick={toggleXray}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition flex items-center gap-1.5 cursor-pointer ${
-              isXrayActive
-                ? "bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.5)]"
-                : "bg-slate-800 text-slate-300 hover:text-white"
-            }`}
-          >
-            <Eye className="w-3 h-3" /> {isXrayActive ? "X-Ray Active" : "Subsurface X-Ray"}
-          </button>
+      {/* Top Left: Cadastral Zone Selector */}
+      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur border border-slate-300 p-3 rounded-xl shadow-lg z-10 flex flex-col space-y-2 max-w-xs">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
+          <MapPin className="w-4 h-4 text-blue-700" /> Cadastral Zone Selector
         </div>
-
         <select
           value={selectedStateIndex}
           onChange={(e) => handleStateChange(Number(e.target.value))}
-          className="w-full bg-[#030712] border border-slate-700 text-white font-semibold text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500"
+          className="w-full bg-slate-50 border border-slate-300 text-slate-900 font-semibold text-xs rounded-lg p-2 focus:outline-none focus:border-blue-700 cursor-pointer"
         >
           {STATE_WARDS.map((w, idx) => (
             <option key={idx} value={idx}>
@@ -436,12 +323,77 @@ export default function GeoCadastreMap({
             </option>
           ))}
         </select>
+      </div>
 
-        <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Click any <strong>3D Building Volume</strong> to inspect Title Deeds.</span>
+      {/* Top Right: Layer Filter Toggles */}
+      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur border border-slate-300 p-3 rounded-xl shadow-lg z-10 flex flex-col space-y-2 text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-slate-800 border-b border-slate-200 pb-1.5">
+          <Filter className="w-3.5 h-3.5 text-blue-700" /> Layer Query Filter
+        </div>
+        <div className="flex flex-col space-y-1.5">
+          <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={filters.BUILDINGS}
+              onChange={() => toggleFilter("BUILDINGS")}
+              className="w-3.5 h-3.5 accent-blue-700 rounded cursor-pointer"
+            />
+            3D Strata Buildings
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold text-red-700">
+            <input
+              type="checkbox"
+              checked={filters.FAR_VIOLATIONS_ONLY}
+              onChange={() => toggleFilter("FAR_VIOLATIONS_ONLY")}
+              className="w-3.5 h-3.5 accent-red-600 rounded cursor-pointer"
+            />
+            Filter: FAR Violations Only
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer font-medium text-emerald-700">
+            <input
+              type="checkbox"
+              checked={filters.TREES}
+              onChange={() => toggleFilter("TREES")}
+              className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
+            />
+            Botanical Tree Personhoods
+          </label>
         </div>
       </div>
+
+      {/* Floating Click Inspector Card */}
+      {activeInspector && (
+        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur border border-slate-300 p-4 rounded-xl shadow-2xl z-20 max-w-sm text-xs space-y-2 animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="font-bold text-blue-900 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5 text-blue-700" /> Cadastral Inspection Details
+            </span>
+            <button
+              onClick={() => setActiveInspector(null)}
+              className="text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <h3 className="font-bold text-slate-900 text-sm">{activeInspector.title}</h3>
+
+          {activeInspector.type === "BUILDING" && (
+            <div className="space-y-1 text-slate-600">
+              <div><strong>Height Envelope:</strong> {activeInspector.height}</div>
+              <div><strong>Status:</strong> <span className={activeInspector.category === "FAR_BREACH" ? "text-red-700 font-bold" : "text-emerald-700 font-bold"}>{activeInspector.status}</span></div>
+            </div>
+          )}
+
+          {activeInspector.type === "TREE" && (
+            <div className="space-y-1 text-slate-600">
+              <div><strong>Species:</strong> {activeInspector.species}</div>
+              <div><strong>Root Cylinder:</strong> <span className="font-mono text-emerald-700 font-bold">{activeInspector.root_cylinder}</span></div>
+              <div><strong>Statutory Felling Penalty:</strong> <span className="font-mono text-red-700 font-bold">{activeInspector.penalty}</span></div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

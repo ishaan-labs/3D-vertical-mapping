@@ -109,3 +109,21 @@ def api_audit_eco(req: EcoParcelInput):
         return compute_eco_cadastre(req)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+from app.core.tree_registry import TreeCadastreRecord, compute_tree_deed_and_easement
+
+@app.post("/api/v1/audit/tree-deed")
+def api_tree_deed(req: TreeCadastreRecord):
+    try:
+        return compute_tree_deed_and_easement(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+from app.core.tree_registry import CompensatoryAfforestationInput, process_compensatory_proof
+
+@app.post("/api/v1/audit/compensatory-afforestation")
+def api_compensatory_afforestation(req: CompensatoryAfforestationInput):
+    try:
+        return process_compensatory_proof(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
