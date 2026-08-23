@@ -100,3 +100,12 @@ def api_audit_airspace(req: AirspaceCorridorInput):
         return audit_airspace_corridor(req)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+from app.core.eco_engine import EcoParcelInput, compute_eco_cadastre
+
+@app.post("/api/v1/audit/eco-cadastre")
+def api_audit_eco(req: EcoParcelInput):
+    try:
+        return compute_eco_cadastre(req)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
