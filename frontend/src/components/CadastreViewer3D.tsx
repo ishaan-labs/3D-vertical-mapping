@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-interface UnitData {
+export interface UnitData {
   id: string;
   name: string;
   strata: string;
@@ -14,7 +14,7 @@ interface UnitData {
   color: number;
 }
 
-const SAMPLE_UNITS: UnitData[] = [
+export const SAMPLE_UNITS: UnitData[] = [
   { id: "U1", name: "Metro Line 3 (Phase 2)", strata: "Underground (U)", zMin: -8, zMax: -4, owner: "Chennai Metro Rail Ltd", ulpin: "IND80219481920-U048028-9A", color: 0x8b5cf6 },
   { id: "U2", name: "Basement Parking B1", strata: "Underground (U)", zMin: -3, zMax: 0, owner: "Society Common Area", ulpin: "IND80219481920-U01E000-3F", color: 0x64748b },
   { id: "F1", name: "Commercial Unit 101", strata: "Vertical Real Estate (V)", zMin: 0.5, zMax: 3.5, owner: "Aditya Retail Corp", ulpin: "IND80219481920-V005023-B1", color: 0x3b82f6 },
@@ -23,27 +23,35 @@ const SAMPLE_UNITS: UnitData[] = [
   { id: "A1", name: "Solar Air-Rights Envelope", strata: "Air Rights (A)", zMin: 11.5, zMax: 14.5, owner: "GreenEnergy Lease", ulpin: "IND80219481920-A073091-E4", color: 0xf59e0b },
 ];
 
-export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset }: { onSelectUnit: (unit: UnitData) => void; isXRay: boolean; explodedOffset: number }) {
+export default function CadastreViewer3D({
+  onSelectUnit,
+  isXRay,
+  explodedOffset
+}: {
+  onSelectUnit: (unit: UnitData) => void;
+  isXRay: boolean;
+  explodedOffset: number;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f172a); // Slate-900
+    scene.background = new THREE.Color(0x0f172a);
 
-    const camera = new THREE.PerspectiveCamera(45, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
-    camera.position.set(28, 22, 28);
+    const width = mountRef.current.clientWidth;
+    const height = mountRef.current.clientHeight;
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(26, 20, 26);
     camera.lookAt(0, 2, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-    renderer.shadowMap.enabled = true;
+    renderer.setSize(width, height);
     mountRef.current.appendChild(renderer.domElement);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(15, 30, 20);
@@ -55,29 +63,26 @@ export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset 
       color: 0x1e293b,
       transparent: true,
       opacity: isXRay ? 0.25 : 0.95,
-      wireframe: false,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
-    // Ground Grid
     const grid = new THREE.GridHelper(24, 24, 0x38bdf8, 0x334155);
     scene.add(grid);
 
     // Volumetric 3D Parcels
     const meshes: THREE.Mesh[] = [];
     SAMPLE_UNITS.forEach((unit, idx) => {
-      const height = unit.zMax - unit.zMin;
+      const h = unit.zMax - unit.zMin;
       const isUnderground = unit.zMin < 0;
-      
-      // Calculate dynamic exploded Z position
+
       let currentZMin = unit.zMin;
       if (!isUnderground && explodedOffset > 0) {
         currentZMin += idx * explodedOffset * 1.5;
       }
 
-      const geo = new THREE.BoxGeometry(8, height, 8);
+      const geo = new THREE.BoxGeometry(8, h, 8);
       const mat = new THREE.MeshStandardMaterial({
         color: unit.color,
         transparent: true,
@@ -86,12 +91,11 @@ export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset 
       });
 
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(0, currentZMin + height / 2, 0);
+      mesh.position.set(0, currentZMin + h / 2, 0);
       mesh.userData = unit;
       scene.add(mesh);
       meshes.push(mesh);
 
-      // Edges for sharp CAD appearance
       const edgeGeo = new THREE.EdgesGeometry(geo);
       const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
       const wireframe = new THREE.LineSegments(edgeGeo, edgeMat);
@@ -110,7 +114,6 @@ export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset 
     tunnel.position.set(0, -6, 2);
     scene.add(tunnel);
 
-    // Mouse Interaction (Raycasting)
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -130,7 +133,6 @@ export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset 
 
     renderer.domElement.addEventListener("click", handleClick);
 
-    // Animation Loop (Slow Auto-Rotation)
     let reqId: number;
     const animate = () => {
       reqId = requestAnimationFrame(animate);
@@ -155,5 +157,10 @@ export default function CadastreViewer3D({ onSelectUnit, isXRay, explodedOffset 
     };
   }, [isXRay, explodedOffset, onSelectUnit]);
 
-  return <div ref={mountRef} className="w-full h-full min-h-[500px] cursor-grab active:cursor-grabbing rounded-xl overflow-hidden shadow-2xl border border-slate-800" />;
+  return (
+    <div
+      ref={mountRef}
+      className="w-full h-full min-h-[500px] cursor-pointer rounded-xl overflow-hidden shadow-2xl border border-slate-800"
+    />
+  );
 }
