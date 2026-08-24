@@ -127,3 +127,22 @@ def api_compensatory_afforestation(req: CompensatoryAfforestationInput):
         return process_compensatory_proof(req)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+from app.core.spatial_engine import (
+    execute_vertical_slice_profile,
+    execute_proximity_query,
+    run_project_simulation_clash,
+    ProposedAssetSimulationInput
+)
+
+@app.get("/api/v1/spatial/vertical-slice")
+def api_vertical_slice(x_cut: float = -13.0):
+    return execute_vertical_slice_profile(x_cut)
+
+@app.get("/api/v1/spatial/proximity")
+def api_proximity_query(target_id: str = "ECO-42", radius_m: float = 8.0):
+    return execute_proximity_query(target_id, radius_m)
+
+@app.post("/api/v1/spatial/simulate-clash")
+def api_simulate_clash(req: ProposedAssetSimulationInput):
+    return run_project_simulation_clash(req)
